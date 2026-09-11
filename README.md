@@ -41,6 +41,19 @@ If your WebRelay units have HTTP auth turned on, set these in
 
 ## Running it (ZimaOS / any Docker host)
 
+**Automatic image builds:** every push to `main` triggers a GitHub Action
+that builds the image and publishes it to
+`ghcr.io/scott-mk1/diy_sprinkler:latest`. That's what lets ZimaOS (or any
+Docker host) install this by pulling an image instead of building locally.
+
+### Installing on ZimaOS (custom install from image)
+
+Use `ghcr.io/scott-mk1/diy_sprinkler:latest` as the image. Map container
+port 8000 to host port 8088 (8000 is taken by Paperless-NGX), and mount a
+persistent volume to `/data` for the database and zone photos.
+
+### Installing anywhere else via docker-compose
+
 1. Copy this whole folder to your homelab (e.g. via `scp` or the ZimaOS file
    manager).
 2. Edit `docker-compose.yml` — set your timezone (`TZ`) and, if needed,
