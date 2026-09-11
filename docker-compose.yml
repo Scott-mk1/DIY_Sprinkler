@@ -1,0 +1,14 @@
+services:
+  sprinkler:
+    build: .
+    container_name: sprinkler-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - TZ=America/New_York
+      # Uncomment and set if your WebRelay units have HTTP auth enabled:
+      # - RELAY_USERNAME=admin
+      # - RELAY_PASSWORD=webrelay

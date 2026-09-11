@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Irrigation{% endblock %}
+
+{% block header_row %}
+<h1>Irrigation</h1>
+<div class="header-actions">
+  <a href="/settings" class="header-btn" aria-label="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+  </a>
+  <button id="theme-toggle" class="header-btn" type="button" aria-label="Toggle dark mode"></button>
+</div>
+{% endblock %}
+
+{% block header_extra %}
+<div class="summary-row">
+  {% if running_count %}
+  <span class="summary-chip running">
+    <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+    {{ running_count }} watering now
+  </span>
+  {% endif %}
+  <span class="summary-chip {{ 'wet' if forecast.ok and forecast.precipitation_probability_max is not none and forecast.precipitation_probability_max >= settings.rain_skip_threshold|int }}">
+    {% if forecast.ok and forecast.precipitation_probability_max is not none %}
+      {{ forecast.precipitation_probability_max }}% rain today
+    {% else %}
+      weather unavailable
+    {% endif %}
+  </span>
+</div>
+{% endblock %}
+
+{% block content %}
+
+{% if running_count %}
+<form method="post" action="/stop_all" class="stop-all-bar">
+  <input type="hidden" name="redirect_to" value="/">
+  <button type="submit" class="btn btn-stop-all">Stop all watering</button>
+</form>
+{% endif %}
+
+<div class="zone-grid">
+  {% for z in zones %}
+  <div class="zone-tile {{ 'zone-off' if not z.enabled }} {{ 'zone-running' if z.running }}">
+    <a href="/zones/{{ z.id }}" class="zone-tile-link">
+      <div class="zone-thumb">
+        {% if z.photo_filename %}
+          <img src="/photos/{{ z.photo_filename }}" alt="{{ z.name }}">
+        {% else %}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2.5c3.5 4.5 6 8 6 11a6 6 0 11-12 0c0-3 2.5-6.5 6-11z"/>
+          </svg>
+        {% endif %}
+        {% if z.running %}
+        <span class="live-badge">LIVE</span>
+        {% endif %}
+      </div>
+      <div class="zone-tile-body">
+        <span class="zone-tile-name">{{ z.name }}</span>
+        <span class="zone-tile-status">
+          {% if z.running %}watering &middot; stops {{ z.stop_time[11:16] if z.stop_time else '' }}
+          {% elif not z.enabled %}off
+          {% else %}ch {{ z.relay_channel }}
+          {% endif %}
+        </span>
+      </div>
+    </a>
+
+    <div class="zone-tile-controls">
+      <form method="post" action="/zones/{{ z.id }}/toggle_enabled" class="inline-form">
+        <input type="hidden" name="redirect_to" value="/">
+        <label class="switch mini">
+          <input type="checkbox" onchange="this.form.requestSubmit()" {{ 'checked' if z.enabled }}>
+          <span class="slider"></span>
+        </label>
+      </form>
+    </div>
+
+    {% if z.enabled and not z.running %}
+    <form method="post" action="/zones/{{ z.id }}/water_now" class="quick-run-form">
+      <input type="hidden" name="duration_minutes" value="10">
+      <input type="hidden" name="redirect_to" value="/">
+      <button type="submit" class="quick-run-btn" aria-label="Quick run {{ z.name }}">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% if not zones %}
+<p class="empty">No zones yet. Add one from Settings.</p>
+{% endif %}
+
+{% endblock %}

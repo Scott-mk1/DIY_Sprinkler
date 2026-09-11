@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Settings - Irrigation{% endblock %}
+
+{% block header_row %}
+<a href="/" class="header-btn" aria-label="Back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+</a>
+<h1 class="header-title">Settings</h1>
+<button id="theme-toggle" class="header-btn" type="button" aria-label="Toggle dark mode"></button>
+{% endblock %}
+
+{% block content %}
+
+<section class="panel">
+  <h2 class="panel-title">Add a new zone</h2>
+  <form method="post" action="/zones/add" class="zone-edit-form">
+    <label>Name <input type="text" name="name" placeholder="Front lawn" required></label>
+    <label>Relay host/IP <input type="text" name="relay_host" placeholder="192.168.1.50" required></label>
+    <label>Channel <input type="number" name="relay_channel" min="1" max="16" placeholder="1" required></label>
+    <button type="submit" class="btn btn-add">Add zone</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">Weather &amp; location</h2>
+  <form method="post" action="/settings/update" class="settings-form">
+    <label>Latitude <input type="text" name="latitude" value="{{ settings.latitude }}" required></label>
+    <label>Longitude <input type="text" name="longitude" value="{{ settings.longitude }}" required></label>
+    <label class="toggle-row">
+      Skip watering when rain is likely
+      <label class="switch">
+        <input type="checkbox" name="rain_check_enabled" {{ 'checked' if settings.rain_check_enabled == '1' }}>
+        <span class="slider"></span>
+      </label>
+    </label>
+    <label>Skip threshold <input type="number" name="rain_skip_threshold" value="{{ settings.rain_skip_threshold }}" min="0" max="100"> % chance of rain</label>
+    <button type="submit" class="btn btn-add">Save settings</button>
+  </form>
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">Recent activity</h2>
+  <div class="log-list">
+    {% for row in log_rows %}
+    <div class="log-row">
+      <span class="log-time">{{ row.event_time[5:16] }}</span>
+      <span class="log-zone">{{ row.zone_name }}</span>
+      <span class="log-action log-{{ row.action }}">{{ row.action.replace('_', ' ') }}</span>
+      {% if row.detail %}<span class="log-detail">{{ row.detail }}</span>{% endif %}
+    </div>
+    {% endfor %}
+    {% if not log_rows %}<p class="empty">No activity yet.</p>{% endif %}
+  </div>
+</section>
+
+{% endblock %}

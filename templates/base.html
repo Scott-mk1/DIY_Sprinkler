@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Irrigation{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+<script>
+  (function () {
+    var saved = localStorage.getItem("irrigation-theme");
+    var theme = saved || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+  })();
+</script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-row">
+    {% block header_row %}{% endblock %}
+  </div>
+  {% block header_extra %}{% endblock %}
+</header>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

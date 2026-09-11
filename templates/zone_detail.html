@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}{{ zone.name }} - Irrigation{% endblock %}
+
+{% block header_row %}
+<a href="/" class="header-btn" aria-label="Back">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+</a>
+<h1 class="header-title">{{ zone.name }}</h1>
+<button id="theme-toggle" class="header-btn" type="button" aria-label="Toggle dark mode"></button>
+{% endblock %}
+
+{% block content %}
+
+<div class="photo-hero">
+  {% if zone.photo_filename %}
+    <img src="/photos/{{ zone.photo_filename }}" alt="{{ zone.name }}">
+  {% else %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 2.5c3.5 4.5 6 8 6 11a6 6 0 11-12 0c0-3 2.5-6.5 6-11z"/>
+    </svg>
+  {% endif %}
+  <form method="post" action="/zones/{{ zone.id }}/photo" enctype="multipart/form-data" class="photo-upload-form">
+    <label class="photo-upload-label">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      {{ 'Change photo' if zone.photo_filename else 'Add photo' }}
+      <input type="file" name="photo" accept="image/png, image/jpeg, image/webp" onchange="this.form.requestSubmit()">
+    </label>
+  </form>
+</div>
+
+<div class="detail-status-row">
+  <span class="status-pill {{ 'on dot' if zone.running else ('' if zone.enabled else '') }}">
+    {{ 'WATERING' if zone.running else ('OFF' if not zone.enabled else 'IDLE') }}
+  </span>
+  <span class="zone-meta">{{ zone.relay_host }} &middot; ch {{ zone.relay_channel }}</span>
+  <form method="post" action="/zones/{{ zone.id }}/toggle_enabled" class="inline-form zone-enable-form">
+    <input type="hidden" name="redirect_to" value="/zones/{{ zone.id }}">
+    <label class="switch">
+      <input type="checkbox" onchange="this.form.requestSubmit()" {{ 'checked' if zone.enabled }}>
+      <span class="slider"></span>
+    </label>
+  </form>
+</div>
+
+<section class="panel">
+  {% if zone.running %}
+    <div class="zone-running-banner">
+      stops at {{ zone.stop_time[11:16] if zone.stop_time else '' }}
+      <form method="post" action="/zones/{{ zone.id }}/stop_now" class="inline-form">
+        <input type="hidden" name="redirect_to" value="/zones/{{ zone.id }}">
+        <button type="submit" class="btn btn-stop">Stop</button>
+      </form>
+    </div>
+  {% else %}
+    <form method="post" action="/zones/{{ zone.id }}/water_now" class="water-now-form">
+      <input type="hidden" name="redirect_to" value="/zones/{{ zone.id }}">
+      <input type="number" name="duration_minutes" value="10" min="1" max="180" class="mini-input">
+      <span class="unit">min</span>
+      <button type="submit" class="btn btn-water">Water now</button>
+      <label class="toggle-row" style="width:100%; margin-top:0.4rem;">
+        ignore rain check
+        <label class="switch">
+          <input type="checkbox" name="bypass_weather" value="1">
+          <span class="slider"></span>
+        </label>
+      </label>
+    </form>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <h2 class="panel-title">Schedule</h2>
+  <div class="schedule-list">
+    {% for s in zone.schedules %}
+    <div class="schedule-row {{ 'schedule-off' if not s.enabled }}">
+      <span class="schedule-days">{{ s.days_of_week }} at {{ s.start_time }} for {{ s.duration_minutes }}min</span>
+      <span class="schedule-actions">
+        <form method="post" action="/schedules/{{ s.id }}/toggle" class="inline-form">
+          <label class="switch">
+            <input type="checkbox" onchange="this.form.requestSubmit()" {{ 'checked' if s.enabled }}>
+            <span class="slider"></span>
+          </label>
+        </form>
+        <form method="post" action="/schedules/{{ s.id }}/delete" class="inline-form" onsubmit="return confirm('Delete this schedule?')">
+          <button type="submit" class="btn-link btn-danger">delete</button>
+        </form>
+      </span>
+    </div>
+    {% endfor %}
+    {% if not zone.schedules %}<p class="empty">No schedules yet.</p>{% endif %}
+  </div>
+
+  <details class="add-schedule">
+    <summary>Add schedule</summary>
+    <form method="post" action="/zones/{{ zone.id }}/schedules/add" class="schedule-form">
+      <div class="day-checks">
+        {% for d in ['mon','tue','wed','thu','fri','sat','sun'] %}
+        <label class="day-pill"><input type="checkbox" name="days_of_week" value="{{ d }}"> {{ d }}</label>
+        {% endfor %}
+      </div>
+      <div class="schedule-form-row">
+        <label>Start <input type="time" name="start_time" value="06:00" required></label>
+        <label>Duration <input type="number" name="duration_minutes" value="15" min="1" max="180" required> min</label>
+      </div>
+      <button type="submit" class="btn btn-add">Add schedule</button>
+    </form>
+  </details>
+</section>
+
+<section class="panel">
+  <details>
+    <summary>Edit zone</summary>
+    <form method="post" action="/zones/{{ zone.id }}/edit" class="zone-edit-form">
+      <label>Name <input type="text" name="name" value="{{ zone.name }}" required></label>
+      <label>Relay host/IP <input type="text" name="relay_host" value="{{ zone.relay_host }}" required></label>
+      <label>Channel <input type="number" name="relay_channel" value="{{ zone.relay_channel }}" min="1" max="16" required></label>
+      <label class="checkbox-row"><input type="checkbox" name="enabled" {{ 'checked' if zone.enabled }}> Zone enabled</label>
+      <button type="submit" class="btn btn-add">Save</button>
+    </form>
+    <form method="post" action="/zones/{{ zone.id }}/delete" onsubmit="return confirm('Delete zone {{ zone.name }} and all its schedules?')">
+      <button type="submit" class="btn-link btn-danger">Delete zone</button>
+    </form>
+  </details>
+</section>
+
+{% endblock %}
