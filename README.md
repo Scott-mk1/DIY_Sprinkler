@@ -49,7 +49,12 @@ If your WebRelay units have HTTP auth turned on, set these in
 
        docker compose up -d --build
 
-4. Open `http://<your-server-ip>:8000` from your phone or any browser on
+   Runs on host port 8088 (8000 is already taken by Paperless-NGX on this
+   box). Change the host-side number in `docker-compose.yml` if 8088 ever
+   collides with something else — the container's internal port stays 8000
+   either way.
+
+4. Open `http://<your-server-ip>:8088` from your phone or any browser on
    your network.
 
 Data (zones, schedules, log) lives in SQLite at `./data/sprinkler.db` on the
